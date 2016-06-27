@@ -1,7 +1,6 @@
 /*
 Isis.h - Isis library v0.6 - 2016-6-26
 Copyright (c) 2016 Thales Services. All rights reserved.
-
 I2C communication in which Arduino is the slave
 */
 #ifndef Isis_h
@@ -56,6 +55,15 @@ I2C communication in which Arduino is the slave
 #define DIGITAL_HIGH 1
 
 
+/* That is a class function (method) which has an implicit this pointer. You can't use it as a static ISR.
+	In general, classes cannot implement ISRs for this reason. There are a few workarounds, one being to make it a static class function. 
+	However then it will affect the entire class, not just one instance. */
+	
+void sendData();					// callback
+void receiveData(int numBytes);
+
+static byte g_inputMsgBuf[BUFFER_SIZE_MAX];
+
 class IsisClass
 {
 public:
@@ -66,29 +74,23 @@ public:
 	void begin();
 	void begin(int i2cAddress);
 	
-	
+	boolean hasNewData();
+    //void decodeMessage(byte msgBuffer[], int bufferSize); //Don’t assume knowledge of pointers so * is replaced by [] : APIStyleGuide
+    void decodeMessage(); //Don’t assume knowledge of pointers so * is replaced by [] : APIStyleGuide
 	
 private:
 	int _i2cAdress;		// I2C Address of the Arduino device
-	
 	byte _inputMsgBuf[BUFFER_SIZE_MAX];
 	
 	void initI2cAsSlave(int i2cAddress);
 	
-	/* That is a class function (method) which has an implicit this pointer. You can't use it as a static ISR.
-	In general, classes cannot implement ISRs for this reason. There are a few workarounds, one being to make it a static class function. 
-	However then it will affect the entire class, not just one instance. */
-	
-	//void sendData();					// callback
-	//void receiveData(int numBytes);
-	
-	void decodeMessage(byte msgBuffer[], int bufferSize); //Don’t assume knowledge of pointers so * is replaced by [] : APIStyleGuide
-	
+				
 	void interpretPinModeMsg(byte data[], int msgSize);
 	void digitalWriteMsg_received(byte data[], int msgSize);
 	
 	void printDebug(const String &functionName, const String &strToPrint);
 };
+
 extern IsisClass Isis;
 
 #endif

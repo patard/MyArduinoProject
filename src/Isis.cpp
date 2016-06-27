@@ -1,9 +1,38 @@
 #include "Isis.h"
 
-#define LOG(x) this->printDebug(__func__, x)
+#define LOG(x) this->printDebug(__func__, F(x))
 
 #define UNRELEVANT_I2C_ADDR -1
 
+
+volatile boolean newData = false;
+int g_numBytes;
+
+
+void receiveData(int numBytes) { // numBytes: the number of bytes read from the master
+	int nbReadByte = 0;
+    
+    g_numBytes = numBytes;
+	// while data available on I2C
+	while (Wire.available()) {
+		if ( nbReadByte >= BUFFER_SIZE_MAX ) {
+			Wire.read(); // purge oversized messages
+			//printDebug("Purge oversized message");
+		}
+		else {
+			g_inputMsgBuf[nbReadByte] = Wire.read();
+		}
+		nbReadByte ++;
+        newData = true;
+	}
+	// Decode message
+	//decodeMessage(_inputMsgBuf, nbReadByte);*/
+}
+void sendData() {
+	/*if (g_OutputMsgSize)
+		Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
+	g_OutputMsgSize = 0;*/
+}
 
 
 //******************************************************************************
@@ -43,47 +72,25 @@ void IsisClass::begin(int i2cAddress)
 	this->initI2cAsSlave(_i2cAdress);
 }
 
-
-
-//******************************************************************************
-//* Private Methods
-//******************************************************************************
-void IsisClass::initI2cAsSlave(int i2cAddress)
+boolean IsisClass::hasNewData()
 {
-	Wire.begin(i2cAddress);
-	// define callbacks for i2c communication
-	/*Wire.onReceive(receiveData);
-	Wire.onRequest(sendData);*/
-}
-
-/*void IsisClass::receiveData(int numBytes) { //TODO numBytes mal utilisé
-	int nbReadByte = 0;
-	// while data available on I2C
-	while (Wire.available()) {
-		if ( nbReadByte >= BUFFER_SIZE_MAX ) {
-			Wire.read(); // purge oversized messages
-			printDebug("Purge oversized message");
-		}
-		else {
-			inputMsgBuf[nbReadByte] = Wire.read();
-		}
-		nbReadByte ++;
-	}
-	// Decode message
-	decodeMessage(_inputMsgBuf, nbReadByte);
+    return newData;
 }
 
 
-void IsisClass::sendData() {
-	if (g_OutputMsgSize)
-		Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
-	g_OutputMsgSize = 0;
-}*/
-
-
-void IsisClass::decodeMessage(byte msgBuffer[], int bufferSize)
+void IsisClass::decodeMessage()
 {
-	switch (msgBuffer[0]) // byte 0 contains the message identifier
+	int bufferSize = g_numBytes;
+    
+    // copy : if an other interruption happens and write on global var,
+    // the treatment is not affected
+    for (int i=0; i < BUFFER_SIZE_MAX; i++)
+    {  
+        _inputMsgBuf[i] = g_inputMsgBuf[i];
+    }
+   
+    
+    switch (_inputMsgBuf[0]) // byte 0 contains the message identifier
 	{
 		/*case DEFINE_ENCODER_MSG_ID:
 		{
@@ -104,13 +111,13 @@ void IsisClass::decodeMessage(byte msgBuffer[], int bufferSize)
 		case PIN_MODE_MSG_ID:
 		{
 		LOG(" => PinModeMsg");
-		interpretPinModeMsg(msgBuffer, bufferSize);
+		interpretPinModeMsg(_inputMsgBuf, bufferSize);
 		break;
 		}
 		case DIGITAL_WRITE_MSG_ID:
 		{
 		LOG(" => DigitalWriteMsg");
-		digitalWriteMsg_received(msgBuffer, bufferSize);
+		digitalWriteMsg_received(_inputMsgBuf, bufferSize);
 		break;
 		}
 		/*case DIGITAL_WRITES_MSG_ID:
@@ -183,6 +190,22 @@ void IsisClass::decodeMessage(byte msgBuffer[], int bufferSize)
 		break;
 		}
 	}
+    
+    // release
+    newData = false;
+}
+
+
+
+//******************************************************************************
+//* Private Methods
+//******************************************************************************
+void IsisClass::initI2cAsSlave(int i2cAddress)
+{
+	Wire.begin(i2cAddress);
+	// define callbacks for i2c communication
+	Wire.onReceive(receiveData);
+	Wire.onRequest(sendData);
 }
 
 
@@ -240,6 +263,3 @@ void IsisClass::printDebug(const String &functionName, const String &strToPrint)
 
 // make one instance for the user to use
 IsisClass Isis;
-
-
-
