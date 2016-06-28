@@ -4,15 +4,16 @@
 
 #define UNRELEVANT_I2C_ADDR -1
 
+volatile boolean g_newData = false;
+volatile int g_numBytes = 0;
+volatile byte g_inputMsgBuf[BUFFER_SIZE_MAX];
 
-volatile boolean newData = false;
-int g_numBytes;
-
-
+/*
+* Receive I2C data
+*/
 void receiveData(int numBytes) { // numBytes: the number of bytes read from the master
 	int nbReadByte = 0;
-    
-    g_numBytes = numBytes;
+	g_numBytes = numBytes;
 	// while data available on I2C
 	while (Wire.available()) {
 		if ( nbReadByte >= BUFFER_SIZE_MAX ) {
@@ -23,17 +24,16 @@ void receiveData(int numBytes) { // numBytes: the number of bytes read from the 
 			g_inputMsgBuf[nbReadByte] = Wire.read();
 		}
 		nbReadByte ++;
-        newData = true;
+		g_newData = true;
 	}
-	// Decode message
-	//decodeMessage(_inputMsgBuf, nbReadByte);*/
+// Decode message
+//decodeMessage(_inputMsgBuf, nbReadByte);*/
 }
 void sendData() {
 	/*if (g_OutputMsgSize)
-		Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
+	Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
 	g_OutputMsgSize = 0;*/
 }
-
 
 //******************************************************************************
 //* Constructors
@@ -58,39 +58,34 @@ void IsisClass::begin(void)
 {
 	begin(57600);
 	_i2cAdress = 0x05;
-	this->initI2cAsSlave(_i2cAdress);// initialize i2c 
+	this->initI2cAsSlave(_i2cAdress);	// initialize i2c
 }
-
 /**
 * Initialize the I2C address of the device
 * @param is the i2c address to set
 */
 void IsisClass::begin(int i2cAddress)
 {
-	begin(57600);	
+	begin(57600);
 	_i2cAdress = i2cAddress;
-	this->initI2cAsSlave(_i2cAdress);
+	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 }
-
+	
 boolean IsisClass::hasNewData()
 {
-    return newData;
+	return g_newData;
 }
-
 
 void IsisClass::decodeMessage()
 {
 	int bufferSize = g_numBytes;
-    
-    // copy : if an other interruption happens and write on global var,
-    // the treatment is not affected
-    for (int i=0; i < BUFFER_SIZE_MAX; i++)
-    {  
-        _inputMsgBuf[i] = g_inputMsgBuf[i];
-    }
-   
-    
-    switch (_inputMsgBuf[0]) // byte 0 contains the message identifier
+	// copy : if an other interruption happens and write on global var,
+	// the treatment is not affected
+	for (int i=0; i < BUFFER_SIZE_MAX; i++)
+	{
+		_inputMsgBuf[i] = g_inputMsgBuf[i];
+	}
+	switch (_inputMsgBuf[0]) // byte 0 contains the message identifier
 	{
 		/*case DEFINE_ENCODER_MSG_ID:
 		{
@@ -186,17 +181,13 @@ void IsisClass::decodeMessage()
 		}*/
 		default :
 		{
-		Serial.println(" .. UNKNOWN ID !");
+			Serial.println(" .. UNKNOWN ID !");
 		break;
 		}
 	}
-    
-    // release
-    newData = false;
+	// release
+	g_newData = false;
 }
-
-
-
 //******************************************************************************
 //* Private Methods
 //******************************************************************************
@@ -208,58 +199,48 @@ void IsisClass::initI2cAsSlave(int i2cAddress)
 	Wire.onRequest(sendData);
 }
 
-
 void IsisClass::interpretPinModeMsg(byte data[], int msgSize)
 {
-	int pinNumber = data[1] >> 2; 		// extract pin number from data
-	byte pinModeToSet = data[1] & 0x3;	// extract pin mode from data
-	byte arduinoPinMode = OUTPUT ;	// default initialization
-	
+	int pinNumber = data[1] >> 2; // extract pin number from data
+	byte pinModeToSet = data[1] & 0x3; // extract pin mode from data
+	byte arduinoPinMode = OUTPUT ; // default initialization
 	if ( msgSize != 2 ) {
 		LOG("Bad message size");
 	}
-	
 	switch ( pinModeToSet) // map Isis protocol value to Arduino
 	{
-		case INPUT_PIN_MODE: 	arduinoPinMode = INPUT; 		break;
-		case OUTPUT_PIN_MODE: 	arduinoPinMode = OUTPUT;		break;
-		case PULLUP_PIN_MODE:	arduinoPinMode = INPUT_PULLUP;	break;
+		case INPUT_PIN_MODE: arduinoPinMode = INPUT; break;
+		case OUTPUT_PIN_MODE: arduinoPinMode = OUTPUT; break;
+		case PULLUP_PIN_MODE: arduinoPinMode = INPUT_PULLUP; break;
 		default:
-			// impossible
+		// impossible
 		break;
 	}
 	// call Arduino core
 	pinMode(pinNumber, arduinoPinMode);
 }
-
-
 void IsisClass::digitalWriteMsg_received(byte data[], int msgSize)
 {
-	int pinNumber = data[1] >> 2; 	// extract pin number from data
+	int pinNumber = data[1] >> 2; // extract pin number from data
 	byte valueToSet = data[1] & 0x1; // extract value to set from data
 	byte arduinoValue = HIGH; // default initialization
-	
 	if ( msgSize != 1 ) {
-		LOG("Bad message size");		
+		LOG("Bad message size");
 	}
-	
-	
 	if (valueToSet == DIGITAL_LOW) {
 		arduinoValue = LOW;
 	}
 	// call Arduino core
 	digitalWrite(pinNumber, arduinoValue);
 }
-
-void IsisClass::printDebug(const String &functionName, const String &strToPrint) 
+void IsisClass::printDebug(const String &functionName, const String &strToPrint)
 {
-//#ifdef _DEBUG_
+	//#ifdef _DEBUG_
 	Serial.print(functionName);
 	Serial.print(" | ");
 	Serial.println(strToPrint);
-//#endif
+	//#endif
 }
-
 
 // make one instance for the user to use
 IsisClass Isis;
