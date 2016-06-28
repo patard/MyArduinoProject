@@ -24,6 +24,7 @@ I2C communication in which Arduino is the slave
 #define ISIS_FIRMWARE_MINOR_VERSION 2
 
 #define BUFFER_SIZE_MAX 4 // max number of data bytes
+#define MSG_NUMBER_POOL 5 // max number of data bytes
 
 // message command bytes
 #define PIN_MODE_MSG_ID 0x01
@@ -61,6 +62,11 @@ However then it will affect the entire class, not just one instance. */
 void sendData(); // callback
 void receiveData(int numBytes);
 
+
+typedef struct {
+    byte    msg[BUFFER_SIZE_MAX];
+    boolean free;
+} T_S_Msg;
 
 class IsisClass
 {

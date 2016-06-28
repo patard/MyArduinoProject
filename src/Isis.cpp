@@ -6,7 +6,26 @@
 
 volatile boolean g_newData = false;
 volatile int g_numBytes = 0;
-volatile byte g_inputMsgBuf[BUFFER_SIZE_MAX];
+T_S_Msg g_inputMsgBuf[MSG_NUMBER_POOL];
+int g_idxTreat = 0;
+int g_nextFree = 0;
+
+
+int getNextFree() {
+    int idx = 0;
+    for (int i=0; i < BUFFER_SIZE_MAX; i++) {
+        idx = (g_nextFree + i) % BUFFER_SIZE_MAX;
+        if (g_inputMsgBuf[idx].free) {
+            Serial.print("getNextFree ");
+            g_nextFree = idx;
+            Serial.println(g_nextFree);          
+            return g_nextFree;
+        }
+    }
+    Serial.println("getNextFree No more space");
+    return -1; // no more free
+}
+
 
 /*
 * Receive I2C data
@@ -16,24 +35,29 @@ void receiveData(int numBytes) { // numBytes: the number of bytes read from the 
 	g_numBytes = numBytes;
 	// while data available on I2C
 	while (Wire.available()) {
-		if ( nbReadByte >= BUFFER_SIZE_MAX ) {
-			Wire.read(); // purge oversized messages
-			//printDebug("Purge oversized message");
-		}
-		else {
-			g_inputMsgBuf[nbReadByte] = Wire.read();
-		}
-		nbReadByte ++;
-		g_newData = true;
+        nextFree = getNextFree();
+        if (nextFree>=0) {
+		  if ( nbReadByte >= BUFFER_SIZE_MAX ) {
+			 Wire.read(); // purge oversized messages
+			 //printDebug("Purge oversized message");
+		  }
+		  else {
+			g_inputMsgBuf[nextFree].msg[nbReadByte] = Wire.read();
+		  }
+          g_inputMsgBuf[nextFree].free = false;
+		  nbReadByte ++;
+		  g_newData = true;
+        }
 	}
-// Decode message
-//decodeMessage(_inputMsgBuf, nbReadByte);*/
 }
+
 void sendData() {
 	/*if (g_OutputMsgSize)
 	Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
 	g_OutputMsgSize = 0;*/
 }
+
+
 
 //******************************************************************************
 //* Constructors
@@ -56,7 +80,7 @@ IsisClass::IsisClass()
 */
 void IsisClass::begin(void)
 {
-	begin(57600);
+	Serial.begin(9600);
 	_i2cAdress = 0x05;
 	this->initI2cAsSlave(_i2cAdress);	// initialize i2c
 }
@@ -66,19 +90,29 @@ void IsisClass::begin(void)
 */
 void IsisClass::begin(int i2cAddress)
 {
-	begin(57600);
+	Serial.begin(9600);
 	_i2cAdress = i2cAddress;
 	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 }
 	
 boolean IsisClass::hasNewData()
 {
-	return g_newData;
+    int idx = 0;
+    for (int i=0; i < BUFFER_SIZE_MAX; i++) {
+        idx = (g_nextFree + i) % BUFFER_SIZE_MAX;
+        if (!g_inputMsgBuf[idx].free) {                  
+            return false;
+        }
+    }
+    
+	return true;
 }
 
 void IsisClass::decodeMessage()
 {
-	int bufferSize = g_numBytes;
+	//LOG("Entry");
+    
+    int bufferSize = g_numBytes;
 	// copy : if an other interruption happens and write on global var,
 	// the treatment is not affected
 	for (int i=0; i < BUFFER_SIZE_MAX; i++)
@@ -105,16 +139,17 @@ void IsisClass::decodeMessage()
 		}*/
 		case PIN_MODE_MSG_ID:
 		{
-		LOG(" => PinModeMsg");
-		interpretPinModeMsg(_inputMsgBuf, bufferSize);
-		break;
+		  LOG(" => PinModeMsg");
+		  interpretPinModeMsg(_inputMsgBuf, bufferSize);
 		}
+        break;
+            
 		case DIGITAL_WRITE_MSG_ID:
 		{
-		LOG(" => DigitalWriteMsg");
-		digitalWriteMsg_received(_inputMsgBuf, bufferSize);
-		break;
+		  LOG(" => DigitalWriteMsg");
+		  digitalWriteMsg_received(_inputMsgBuf, bufferSize);		
 		}
+        break;
 		/*case DIGITAL_WRITES_MSG_ID:
 		{
 		#ifdef _DEBUG_
@@ -182,10 +217,11 @@ void IsisClass::decodeMessage()
 		default :
 		{
 			Serial.println(" .. UNKNOWN ID !");
-		break;
 		}
+        break;
 	}
 	// release
+    g_inputMsgBuf[nextFree].free = false;
 	g_newData = false;
 }
 //******************************************************************************
@@ -219,12 +255,13 @@ void IsisClass::interpretPinModeMsg(byte data[], int msgSize)
 	// call Arduino core
 	pinMode(pinNumber, arduinoPinMode);
 }
+
 void IsisClass::digitalWriteMsg_received(byte data[], int msgSize)
 {
 	int pinNumber = data[1] >> 2; // extract pin number from data
 	byte valueToSet = data[1] & 0x1; // extract value to set from data
 	byte arduinoValue = HIGH; // default initialization
-	if ( msgSize != 1 ) {
+	if ( msgSize != 2 ) {
 		LOG("Bad message size");
 	}
 	if (valueToSet == DIGITAL_LOW) {
@@ -233,6 +270,7 @@ void IsisClass::digitalWriteMsg_received(byte data[], int msgSize)
 	// call Arduino core
 	digitalWrite(pinNumber, arduinoValue);
 }
+
 void IsisClass::printDebug(const String &functionName, const String &strToPrint)
 {
 	//#ifdef _DEBUG_
