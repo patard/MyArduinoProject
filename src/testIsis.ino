@@ -18,47 +18,40 @@ test(ok)
   assertNotEqual(x, y);
   // assertEqual(x, y);
   }*/
-
-
+  
 test(led13)
 {
   byte msgId;
   byte data;
   int value;
-
   // set pin 13 to OUTPUT
   Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device
   msgId = 1;
   data = 53; // 0x35
   Wire.write(msgId);
-  Wire.write(data);              // sends one byte
-  Wire.endTransmission();    // stop transmitting
-
+  Wire.write(data); // sends one byte
+  Wire.endTransmission(); // stop transmitting
   delay(100); // the Isis is treating message
-
   // set pin 13 to LOW
   Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device
   msgId = 3;
   data = 52; // 0x34
   Wire.write(msgId);
-  Wire.write(data);              // sends one byte
-  Wire.endTransmission();    // stop transmitting
-
+  Wire.write(data); // sends one byte
+  Wire.endTransmission(); // stop transmitting
   // check result
   delay(100);
   value = digitalRead(13);
   Serial.print("testLed13 low ");
   Serial.println (value);
   assertEqual(value, LOW);
-
   // set pin 13 to HIGH
   Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device
   msgId = 3;
   data = 53; // 0x35
   Wire.write(msgId);
-  Wire.write(data);              // sends one byte
-  Wire.endTransmission();    // stop transmitting
-
+  Wire.write(data); // sends one byte
+  Wire.endTransmission(); // stop transmitting
   // check result
   delay(100);
   value = digitalRead(13);
@@ -80,6 +73,3 @@ void loop()
   //Serial.println("testIsis loop");
   Test::run();
 }
-
-
-

@@ -2,63 +2,137 @@
 
 #define LOG(x) this->printDebug(__func__, F(x))
 
+#define DEFAULT_SERIAL_BAUD_RATE 9600
 #define UNRELEVANT_I2C_ADDR -1
 
-volatile boolean g_newData = false;
-volatile int g_numBytes = 0;
-T_S_Msg g_inputMsgBuf[MSG_NUMBER_POOL];
-int g_idxTreat = 0;
-int g_nextFree = 0;
 
-
-int getNextFree() {
-    int idx = 0;
-    for (int i=0; i < BUFFER_SIZE_MAX; i++) {
-        idx = (g_nextFree + i) % BUFFER_SIZE_MAX;
-        if (g_inputMsgBuf[idx].free) {
-            Serial.print("getNextFree ");
-            g_nextFree = idx;
-            Serial.println(g_nextFree);          
-            return g_nextFree;
-        }
-    }
-    Serial.println("getNextFree No more space");
-    return -1; // no more free
+//******************************************************************************
+//* Constructors
+//******************************************************************************
+I2cMsgContainer::I2cMsgContainer ()
+{
+	_freeIdx = 0;
+	_workIdx = 0;
 }
+
+//******************************************************************************
+//* Public Methods
+//******************************************************************************
+boolean I2cMsgContainer::isEmpty()
+{
+	return ( updateWorkIdx() < 0); // if no valid working index, the container is empty
+}
+
+boolean I2cMsgContainer::isFull()
+{
+	boolean ret = true;
+	if ( this->getFreeIdx() >= 0 ) {
+		ret = false; // at least one element is free
+	}
+	
+	return ret; 
+}
+
+int I2cMsgContainer::getFreeIdx()
+{
+	int idx = 0;
+	for (int i=0; i < MSG_NUMBER_POOL; i++) {
+		idx = (_freeIdx + i) % MSG_NUMBER_POOL;
+		
+		if ( _container[idx].free ) {
+			_freeIdx = idx;
+			return idx; // at least one element is free
+		}
+	}
+	
+	Serial.println("No more free space in container");
+	return -1; // no element free found, the container is full
+}
+
+int I2cMsgContainer::updateWorkIdx()
+{
+	int idx = 0;
+	for (int i=0; i < MSG_NUMBER_POOL; i++) {
+		idx = (_workIdx + i) % MSG_NUMBER_POOL;
+		
+		if ( ! _container[idx].free ) {
+			_workIdx = idx;
+			return idx; // at least one element is NOT free
+		}
+	}
+	
+	Serial.println("No more free working in container");
+	return -1; // all element are free found
+}
+
+/*void I2cMsgContainer::addByte(int idx, int bytePosition, char c)
+{
+	_container[idx].data[bytePosition] = c;
+	_container[idx].free = false;
+	updateWorkIdx(); // will update _workIdx if necessary
+}*/
+
+void I2cMsgContainer::addMsg(int idx,  char * c, int size)
+{
+	for (int i = 0; i < size; i++) {
+		_container[idx].data[i] = c[i];
+	}
+	_container[idx].nbBytes = size;
+	_container[idx].free = false;
+	updateWorkIdx(); // will update _workIdx if necessary
+}
+
+T_S_MsgContainer * I2cMsgContainer::getWorkMsg() 
+{
+	if ( _workIdx >= 0 ) {
+		return &(_container[_workIdx]);
+	}
+	else {
+		return NULL;
+	}
+}
+
+void I2cMsgContainer::releaseWorkMsg()
+{
+	_container[_workIdx].free = true;
+	updateWorkIdx(); // will update _workIdx
+}
+
+
+// make one instance for the user to use
+I2cMsgContainer g_MsgContainer;
 
 
 /*
 * Receive I2C data
 */
 void receiveData(int numBytes) { // numBytes: the number of bytes read from the master
-	int nbReadByte = 0;
-	g_numBytes = numBytes;
+	int bytePosition = 0;
+	char tmpBuff[BUFFER_SIZE_MAX];
+	//g_numBytes = numBytes;
 	// while data available on I2C
 	while (Wire.available()) {
-        nextFree = getNextFree();
-        if (nextFree>=0) {
-		  if ( nbReadByte >= BUFFER_SIZE_MAX ) {
-			 Wire.read(); // purge oversized messages
-			 //printDebug("Purge oversized message");
-		  }
-		  else {
-			g_inputMsgBuf[nextFree].msg[nbReadByte] = Wire.read();
-		  }
-          g_inputMsgBuf[nextFree].free = false;
-		  nbReadByte ++;
-		  g_newData = true;
-        }
+		if ( bytePosition >= BUFFER_SIZE_MAX ) {
+				Wire.read(); // purge oversized messages
+				//printDebug("Purge oversized message");
+		}
+		else {
+			tmpBuff[bytePosition] = Wire.read();
+		}
+		bytePosition ++;
+	} // while
+	
+	
+	if ( ! g_MsgContainer.isFull() ) {
+		int idx = g_MsgContainer.getFreeIdx();			
+		g_MsgContainer.addMsg(idx, tmpBuff, numBytes);		
 	}
 }
-
 void sendData() {
 	/*if (g_OutputMsgSize)
 	Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
 	g_OutputMsgSize = 0;*/
 }
-
-
-
 //******************************************************************************
 //* Constructors
 //******************************************************************************
@@ -69,8 +143,8 @@ void sendData() {
 IsisClass::IsisClass()
 {
 	_i2cAdress = UNRELEVANT_I2C_ADDR; // init to unrelevant I2C address
+	_ptMsgContainer = &g_MsgContainer;
 }
-
 //******************************************************************************
 //* Public Methods
 //******************************************************************************
@@ -80,9 +154,9 @@ IsisClass::IsisClass()
 */
 void IsisClass::begin(void)
 {
-	Serial.begin(9600);
+	Serial.begin(DEFAULT_SERIAL_BAUD_RATE);
 	_i2cAdress = 0x05;
-	this->initI2cAsSlave(_i2cAdress);	// initialize i2c
+	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 }
 /**
 * Initialize the I2C address of the device
@@ -90,36 +164,30 @@ void IsisClass::begin(void)
 */
 void IsisClass::begin(int i2cAddress)
 {
-	Serial.begin(9600);
+	Serial.begin(DEFAULT_SERIAL_BAUD_RATE);
 	_i2cAdress = i2cAddress;
 	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 }
-	
-boolean IsisClass::hasNewData()
+
+boolean IsisClass::newDataAvailable()
 {
-    int idx = 0;
-    for (int i=0; i < BUFFER_SIZE_MAX; i++) {
-        idx = (g_nextFree + i) % BUFFER_SIZE_MAX;
-        if (!g_inputMsgBuf[idx].free) {                  
-            return false;
-        }
-    }
-    
-	return true;
+	return !_ptMsgContainer->isEmpty();
 }
 
 void IsisClass::decodeMessage()
 {
 	//LOG("Entry");
-    
-    int bufferSize = g_numBytes;
+	//int bufferSize = g_numBytes;
+	int bufferSize = _ptMsgContainer->getWorkMsg()->nbBytes;
 	// copy : if an other interruption happens and write on global var,
 	// the treatment is not affected
 	for (int i=0; i < BUFFER_SIZE_MAX; i++)
 	{
-		_inputMsgBuf[i] = g_inputMsgBuf[i];
+		//_msg[i] = g_inputMsgBuf[i];
+		_msg[i] = _ptMsgContainer->getWorkMsg()->data[i];
 	}
-	switch (_inputMsgBuf[0]) // byte 0 contains the message identifier
+	
+	switch (_msg[0]) // byte 0 contains the message identifier
 	{
 		/*case DEFINE_ENCODER_MSG_ID:
 		{
@@ -139,17 +207,16 @@ void IsisClass::decodeMessage()
 		}*/
 		case PIN_MODE_MSG_ID:
 		{
-		  LOG(" => PinModeMsg");
-		  interpretPinModeMsg(_inputMsgBuf, bufferSize);
+		LOG(" => PinModeMsg");
+		interpretPinModeMsg(_msg, bufferSize);
 		}
-        break;
-            
+		break;
 		case DIGITAL_WRITE_MSG_ID:
 		{
-		  LOG(" => DigitalWriteMsg");
-		  digitalWriteMsg_received(_inputMsgBuf, bufferSize);		
+		LOG(" => DigitalWriteMsg");
+		digitalWriteMsg_received(_msg, bufferSize);
 		}
-        break;
+		break;
 		/*case DIGITAL_WRITES_MSG_ID:
 		{
 		#ifdef _DEBUG_
@@ -218,11 +285,12 @@ void IsisClass::decodeMessage()
 		{
 			Serial.println(" .. UNKNOWN ID !");
 		}
-        break;
+		break;
 	}
 	// release
-    g_inputMsgBuf[nextFree].free = false;
-	g_newData = false;
+	_ptMsgContainer->releaseWorkMsg();
+	//g_inputMsgBuf[nextFree].free = false;
+	
 }
 //******************************************************************************
 //* Private Methods
