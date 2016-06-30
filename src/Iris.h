@@ -6,9 +6,15 @@ I2C communication in which Arduino is the slave
 #ifndef Iris_h
 #define Iris_h
 
+
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__)
 #include <arduino.h>
 #include <Wire.h> // I2C library
-#include "FifoContainer.h"
+#else
+//TODO define byte
+#endif
+
+#include "MsgContainer.h"
 #include "IrisBehaviour.h"
 
 /* Version numbers for the protocol. The protocol is still changing, so these
@@ -54,39 +60,33 @@ I2C communication in which Arduino is the slave
 #define DIGITAL_LOW 0
 #define DIGITAL_HIGH 1
 
-/* That is a class function (method) which has an implicit this pointer. You can't use it as a static ISR.
-In general, classes cannot implement ISRs for this reason. There are a few workarounds, one being to make it a static class function.
-However then it will affect the entire class, not just one instance. */
-void sendData(); // callback
-void receiveData(int numBytes);
+#define UNRELEVANT_I2C_ADDR -1
+
 
 
 class IrisClass
 {
 public:
 	IrisClass();
-	/* Application of APIStyleGuide of Arduino:
-	Use begin() to initialize a library instance, usually with some settings */
-	void begin();
-	void begin(int i2cAddress);
+
 	boolean available(); // naw data available
-	//void decodeMessage(byte msgBuffer[], int bufferSize); //Don’t assume knowledge of pointers so * is replaced by [] : APIStyleGuide
+
 	void decodeMessage();
-private:
-	int _i2cAdress; // I2C Address of the Arduino device
-	void initI2cAsSlave(int i2cAddress);
-	FifoContainer * _ptMsgContainerQueue;
+     void printDebug(const String &functionName, const String &strToPrint);
+protected:
+    int _i2cAdress; // I2C Address of the  device
+    
+	MsgContainer * _ptMsgContainerQueue;
 	
 	IrisBehaviour * _irisBehaviour;
 	
-	void interpretPinModeMsg(byte data[], int msgSize);
-	void digitalWriteMsg_received(byte data[], int msgSize);
-	
+	void digitalWriteMsg_received(byte data[], int msgSize);	
 	void decodePinModeMsg(byte data[], int msgSize);
 	
 	
-	void printDebug(const String &functionName, const String &strToPrint);
+	
 };
 
-extern IrisClass Iris;
+//extern IrisClass Iris;
+extern MsgContainer g_MsgContainerQueue;
 #endif

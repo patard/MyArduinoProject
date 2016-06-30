@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.2">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>150</x>
+      <y>310</y>
+      <w>280</w>
+      <h>170</h>
+    </coordinates>
+    <panel_attributes>MsgContainerQueue
+--
+- _freeIdx: int
+- _currentIdx: int
+--
++isEmpty(): bool
++isFull(): bool
++currentContainerContent(): byte *
++currentContainerSize(): int
++freeCurrentContainer(): void
++add(char c[], int size): boolean</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>630</x>
+      <y>360</y>
+      <w>310</w>
+      <h>150</h>
+    </coordinates>
+    <panel_attributes>Iris
+--
+
+--
++available(): bool
++read(): void
+-decodeMsg(msg: * Message): void
+-treatPinModeMsg(msg: * Message): void
++writePinMode(pinNumber: int, mode: int): void
+-encode</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>420</x>
+      <y>380</y>
+      <w>230</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+_ptMsgContainerQueue</panel_attributes>
+    <additional_attributes>210.0;20.0;10.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1010</x>
+      <y>370</y>
+      <w>300</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>IrisBehaviour
+--
+
+--
+setPinMode(pinNumber: int, mode: int): int
+sendData(data: * byte)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>930</x>
+      <y>390</y>
+      <w>100</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>10.0;10.0;80.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1020</x>
+      <y>550</y>
+      <w>300</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>IrisArduinoBehaviour
+--
+
+--
+setPinMode(pinNumber: int, mode: int): int</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1150</x>
+      <y>440</y>
+      <w>30</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>350</x>
+      <y>110</y>
+      <w>150</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>Message
+--
+msgId: int
+msgSize: int
+msgBody: *byte</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>290</x>
+      <y>190</y>
+      <w>160</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>140.0;10.0;10.0;120.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>440</x>
+      <y>190</y>
+      <w>210</w>
+      <h>220</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;190.0;200.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>670</x>
+      <y>590</y>
+      <w>230</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>IrisArduino
+--
+-_i2cAddress
+--
++receiveData(num: int): void
++sendData(): void
++begin()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>770</x>
+      <y>500</y>
+      <w>30</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;90.0</additional_attributes>
+  </element>
+</diagram>
