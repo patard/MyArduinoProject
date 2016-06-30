@@ -5,8 +5,12 @@ I2C communication in which Arduino is the slave
 */
 #ifndef Iris_h
 #define Iris_h
+
 #include <arduino.h>
 #include <Wire.h> // I2C library
+#include "FifoContainer.h"
+#include "IrisBehaviour.h"
+
 /* Version numbers for the protocol. The protocol is still changing, so these
 * version numbers are important.
 * Query using the REPORT_VERSION message.
@@ -19,8 +23,7 @@ I2C communication in which Arduino is the slave
 */
 #define Iris_FIRMWARE_MAJOR_VERSION 0
 #define Iris_FIRMWARE_MINOR_VERSION 2
-#define BUFFER_SIZE_MAX 4 // max number of data bytes
-#define MSG_NUMBER_POOL 5 // max number of data bytes
+
 // message command bytes
 #define PIN_MODE_MSG_ID 0x01
 #define DIGITAL_READ_MSG_ID 0x02
@@ -41,10 +44,12 @@ I2C communication in which Arduino is the slave
 #define TYPE_ARDUINO_MSG_ID 0xFB
 #define IDL_VERSION_MSG_ID 0xFC
 #define SOFT_VERSION_MSG_ID 0xF9
+
 // Digital pin mode (Iris protocol value)
 #define INPUT_PIN_MODE 0
 #define OUTPUT_PIN_MODE 1
 #define PULLUP_PIN_MODE 2
+
 // Digital pin value (Iris protocol value)
 #define DIGITAL_LOW 0
 #define DIGITAL_HIGH 1
@@ -55,62 +60,29 @@ However then it will affect the entire class, not just one instance. */
 void sendData(); // callback
 void receiveData(int numBytes);
 
-typedef struct {
-	byte data[BUFFER_SIZE_MAX];
-	int nbBytes; // number of byte of the data TODO
-	boolean free;
-} T_S_MsgContainer;
-
-/*
-* circular container : act like a FIFO
-*/
-class I2cMsgContainer 
-{
-public:
-	I2cMsgContainer();
-	
-	boolean isFull();
-	boolean isEmpty();
-	int getFreeIdx(); // index of the first free data
-	
-	T_S_MsgContainer * getWorkMsg();
-	void releaseWorkMsg();
-	
-	//void addByte(int idx, int bytePosition, char c);
-	void addMsg(int idx,  char * c, int size);
-private:
-	T_S_MsgContainer _container[MSG_NUMBER_POOL];
-	int _freeIdx;
-	int _workIdx;
-	
-	int updateWorkIdx(); // index of the working data
-};
-
-
 
 class IrisClass
 {
 public:
 	IrisClass();
-	
 	/* Application of APIStyleGuide of Arduino:
 	Use begin() to initialize a library instance, usually with some settings */
 	void begin();
 	void begin(int i2cAddress);
-	
-	boolean newDataAvailable();
+	boolean available(); // naw data available
 	//void decodeMessage(byte msgBuffer[], int bufferSize); //Don’t assume knowledge of pointers so * is replaced by [] : APIStyleGuide
 	void decodeMessage();
-	
 private:
 	int _i2cAdress; // I2C Address of the Arduino device
 	void initI2cAsSlave(int i2cAddress);
-	I2cMsgContainer * _ptMsgContainer;
+	FifoContainer * _ptMsgContainerQueue;
 	
-	byte _msg[BUFFER_SIZE_MAX]; // the message that is processed
+	IrisBehaviour * _irisBehaviour;
 	
 	void interpretPinModeMsg(byte data[], int msgSize);
 	void digitalWriteMsg_received(byte data[], int msgSize);
+	
+	void decodePinModeMsg(byte data[], int msgSize);
 	
 	
 	void printDebug(const String &functionName, const String &strToPrint);
