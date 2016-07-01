@@ -1,7 +1,7 @@
 #ifndef IrisBehaviour_h
 #define IrisBehaviour_h
 
-#include <arduino.h>
+#include <Arduino.h>
 
 
 /*

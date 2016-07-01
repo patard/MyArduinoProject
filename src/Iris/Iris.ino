@@ -1,4 +1,4 @@
-#include <Iris.h>
+#include <IrisArduino.h>
 
 void setup() {
   Iris.begin();

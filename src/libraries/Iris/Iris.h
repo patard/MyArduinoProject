@@ -7,7 +7,7 @@ I2C communication in which Arduino is the slave
 #define Iris_h
 
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__)
-#include <arduino.h>
+#include <Arduino.h>
 #include <Wire.h> // I2C library
 #else
 //TODO define byte

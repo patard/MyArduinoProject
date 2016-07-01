@@ -62,6 +62,7 @@ test(led13)
   assertEqual(value, HIGH);
 }
 
+/*
 test(digitRead)
 {
    byte msgId;
@@ -96,7 +97,7 @@ test(digitRead)
     IrisClass::decodeDigitalRead(reading[1], &pinNumber, &valueRead);
     Serial.println(valueRead);   // print the reading
   }
-}
+}*/
 
 
 void setup()
