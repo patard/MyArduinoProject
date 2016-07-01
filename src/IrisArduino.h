@@ -1,4 +1,3 @@
-
 #ifndef IrisArduino_h
 #define IrisArduino_h
 
@@ -11,24 +10,17 @@ However then it will affect the entire class, not just one instance. */
 void sendData(); // callback
 void receiveData(int numBytes);
 
-
 class IrisArduinoClass: public IrisClass
 {
 public:
 	IrisArduinoClass();
-    
 	/* Application of APIStyleGuide of Arduino:
 	Use begin() to initialize a library instance, usually with some settings */
 	void begin();
 	void begin(int i2cAddress);
-
-void printDebug(const String &functionName, const String &strToPrint);
+	void printDebug(const String &functionName, const String &strToPrint);
 protected:
-	
 	void initI2cAsSlave(int i2cAddress);
-    
-    
-
 };
 
 extern IrisArduinoClass Iris;
