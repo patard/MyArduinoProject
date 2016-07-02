@@ -9,18 +9,19 @@ void receiveData(int numBytes) { // numBytes: the number of bytes read from the 
 	char tmpBuff[CONTAINER_SIZE];
 	// while data available on I2C
 	while (Wire.available()) {
-	if ( bytePosition >= CONTAINER_SIZE ) {
-	Wire.read(); // purge oversized messages
-	}
-	else {
-	tmpBuff[bytePosition] = Wire.read();
-	}
-	bytePosition ++;
+	   if ( bytePosition >= CONTAINER_SIZE ) {
+           Wire.read(); // purge oversized messages
+	   }
+	   else {
+	       tmpBuff[bytePosition] = Wire.read();
+	   }
+	   bytePosition ++;
 	} // while
 	if ( ! g_MsgContainerQueue.isFull() ) {
-	g_MsgContainerQueue.add( tmpBuff, bytePosition);
+	   g_MsgContainerQueue.add( tmpBuff, bytePosition);
+    }
 }
-}
+
 void sendData() {
 	if (g_OutputMsgSize)
 		Wire.write(g_pOutputMsgBuf, g_OutputMsgSize);
@@ -36,10 +37,7 @@ void sendData() {
 */
 IrisArduinoClass::IrisArduinoClass()
 {
-	// call of parent constructor
-	/*_i2cAdress = UNRELEVANT_I2C_ADDR; // init to unrelevant I2C address
-	_ptMsgContainerQueue = &g_MsgContainerQueue;
-	_irisBehaviour = &IrisBehav;*/
+
 }
 //******************************************************************************
 //* Public Methods
@@ -66,6 +64,8 @@ void IrisArduinoClass::begin(int i2cAddress)
 	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 	Serial.println(__func__);
 }
+
+
 //******************************************************************************
 //* Private Methods
 //******************************************************************************
@@ -82,7 +82,7 @@ void IrisArduinoClass::printDebug(const String &functionName, const String &strT
 {
 	//#ifdef _DEBUG_
 	Serial.print(functionName);
-	Serial.print(" | ");
+	Serial.print(" IrisArduino | ");
 	Serial.println(strToPrint);
 	//#endif
 }

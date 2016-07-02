@@ -18,24 +18,24 @@ void IrisBehaviour::setPinMode(int pinNumber, int pinModeToSet)
 		break;
 	}
 	// call Arduino core
-	pinMode(pinNumber, arduinoPinMode);
+	::pinMode(pinNumber, arduinoPinMode);
 }
 
 void IrisBehaviour::digitalWrite(int pinNumber, int valueToSet)
 {
-	byte arduinoValue = HIGH; // default initialization
+	//Serial.println(__func__);
+    
+    byte arduinoValue = HIGH; // default initialization
 	if (valueToSet == DIGITAL_LOW) {
 		arduinoValue = LOW;
 	}
 	// call Arduino core
-	digitalWrite(pinNumber, arduinoValue);
+	::digitalWrite(pinNumber, arduinoValue);
 }
 
 
 /*void IrisBehaviour::sendMsg(byte msg[])
 {
-
-
 }*/
 
 void IrisBehaviour::analogWrite(int pinNumber, int value)
@@ -48,20 +48,24 @@ void IrisBehaviour::analogWrite(int pinNumber, int value)
 		value = 255;
 	}
 	
-	analogWrite(pinNumber, value);
+	::analogWrite(pinNumber, value);
 }
 
 
-bool IrisBehaviour::digitalRead(int pinNumber)
+bool IrisBehaviour::digital_Read(int pinNumber)
 {
 	// TODO check if on Arduino it is really a digital Pin
+    Serial.print("DR on Pin ");
+    Serial.print(pinNumber);
+    Serial.print(" ,value ");
+    Serial.println(digitalRead(pinNumber));
 	return digitalRead(pinNumber);
 }
 
 int IrisBehaviour::analogRead(int pinNumber)
 {
 	// TODO check if on Arduino it is really an analog Pin
-	return analogRead(pinNumber);
+	return ::analogRead(pinNumber);
 }
 
 IrisBehaviour IrisBehav;

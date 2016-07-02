@@ -113,7 +113,9 @@ void IrisClass::treatPinModeMsg(byte data[], int msgSize)
 
 void IrisClass::treatDigitalWriteMsg(byte data[], int msgSize)
 {
-	if ( msgSize != 2 ) {
+	//LOG("ENTRY");
+    
+    if ( msgSize != 2 ) {
 		LOG("Bad message size");
 		return;
 	}
@@ -122,6 +124,7 @@ void IrisClass::treatDigitalWriteMsg(byte data[], int msgSize)
 	
 	
 	_irisBehaviour->digitalWrite(pinNumber, valueToSet);
+   //LOG("EXIT");
 }
 
 // write on 2 pins
@@ -172,14 +175,14 @@ void IrisClass::treatIdlVersionMsg(byte data[], int msgSize)
 
 void IrisClass::digitalReadMsg(byte data[], int msgSize) // ??? Bizarre => j'ai changé le sens
 {
-	if ( msgSize != 1 ) {
+	if ( msgSize != 2 ) {
 		LOG("Bad message size");
 		return;
 	}
 	
 	int pinNumber = data[1];
-	bool valueRead = _irisBehaviour->digitalRead(pinNumber);
-	
+	bool valueRead = _irisBehaviour->digital_Read(pinNumber);
+	Serial.println(valueRead);
 	// encode msg, write in global var
 	g_OutputMsgSize = 2;
 	g_pOutputMsgBuf[0] = DIGITAL_READ_VALUE_MSG_ID;
@@ -209,8 +212,8 @@ void IrisClass::analogReadMsg(byte data[], int msgSize) // ??? Bizarre => j'ai c
 
 void IrisClass::decodeDigitalRead(byte aByte, int * pinNum, int * valueRead)
 {
-	*pinNum = aByte & 0x3;
-	*valueRead = aByte >> 2;
+	*valueRead = aByte & 0x3;
+	*pinNum = aByte >> 2;
 }
 
 void IrisClass::printDebug(const String &functionName, const String &strToPrint)

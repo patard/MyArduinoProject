@@ -17,7 +17,7 @@ public:
 	void digitalWrite(int pinNumber, int value);
 	void analogWrite(int pinNumber, int value);
 	
-	bool digitalRead(int pinNumber);
+	bool digital_Read(int pinNumber);
 	int analogRead(int pinNumber);
 	
 	//void sendMsg(byte msg[]);

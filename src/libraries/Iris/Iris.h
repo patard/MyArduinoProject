@@ -85,7 +85,7 @@ protected:
 	void digitalReadMsg(byte data[], int msgSize);
 	void analogReadMsg(byte data[], int msgSize);
 	
-	void printDebug(const String &functionName, const String &strToPrint);
+	virtual void printDebug(const String &functionName, const String &strToPrint);
 };
 
 extern MsgContainer g_MsgContainerQueue;

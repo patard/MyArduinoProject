@@ -18,9 +18,11 @@ public:
 	Use begin() to initialize a library instance, usually with some settings */
 	void begin();
 	void begin(int i2cAddress);
-	void printDebug(const String &functionName, const String &strToPrint);
+	    
 protected:
 	void initI2cAsSlave(int i2cAddress);
+    
+    void printDebug(const String &functionName, const String &strToPrint);
 };
 
 extern IrisArduinoClass Iris;
