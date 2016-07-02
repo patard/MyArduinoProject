@@ -18,7 +18,16 @@ public:
 	Use begin() to initialize a library instance, usually with some settings */
 	void begin();
 	void begin(int i2cAddress);
-	    
+    void beginMaster(int i2cAddress);
+
+    void debugMsgReq(int id);
+    void pinModeReq(int pinNum, byte mode);
+    
+    void digitalWriteReq(int pinNum, byte valueToSet);
+    void digitalReadReq(int pinNum);
+    
+    void analogWriteReq(int pinNum, int valueToSet);
+    void analogReadReq(int pinMode);
 protected:
 	void initI2cAsSlave(int i2cAddress);
     

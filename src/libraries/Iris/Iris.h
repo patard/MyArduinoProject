@@ -42,6 +42,8 @@ I2C communication in which Arduino is the slave
 #define GET_TYPE_ARDUINO_MSG_ID 0x0B
 #define GET_IDL_VERSION_MSG_ID 0x0C
 
+#define DEBUG_MSG_ID 0xFF
+
 #define DIGITAL_READ_VALUE_MSG_ID 0xF2
 #define ANALOG_READ_VALUE_MSG_ID 0xF5
 #define ENCODER_COUNTER_MSG_ID 0xF8
@@ -49,6 +51,10 @@ I2C communication in which Arduino is the slave
 #define TYPE_ARDUINO_MSG_ID 0xFB
 #define IDL_VERSION_MSG_ID 0xFC
 #define SOFT_VERSION_MSG_ID 0xF9
+
+
+#define DIGITAL_READ_VALUE_MSG_SIZE 2
+#define ANALOG_READ_VALUE_MSG_SIZE 3
 
 // Digital pin mode (Iris protocol value)
 #define INPUT_PIN_MODE 0
@@ -68,8 +74,36 @@ public:
 	boolean available(); // new data available
 	void decodeMessage();
 	
-	static void decodeDigitalRead(byte aByte, int * pinNum, int * valueRead);
+    // request
+    virtual void debugMsgReq(int id);
+    
+    virtual void pinModeReq(int pinMode, byte mode);
+    static void decodePinMode(byte input[], int * pinNum, byte * mode);
+    static void encodePinMode(byte output[], int * size,int pinNum, byte mode);
+    
+    virtual void digitalWriteReq(int pinMode, byte valueToSet);
+    static void decodeDigitalWrite(byte input[], int * pinNum, byte * valueToSet);
+    static void encodeDigitalWrite(byte output[], int * size,int pinNum, byte valueToSet);
+    
+    virtual void analogWriteReq(int pinMode, int valueToSet);
+    static void decodeAnalogWrite(byte input[], int * pinNum, byte * valueToSet);
+    static void encodeAnalogWrite(byte output[], int * size,int pinNum, int valueToSet);
+    
+    virtual void digitalReadReq(int pinMode);
+    static void decodeDigitalRead(byte input[], int * pinNum);
+    static void encodeDigitalRead(byte output[],int * size, int  pinNum);
+    
+    virtual void analogReadReq(int pinMode);
+    static void decodeAnalogRead(byte input[], int * pinNum);
+    static void encodeAnalogRead(byte  output[], int * size, int  pinNum);
 	
+    // value
+    static void encodeDigitalReadValue(byte  output[], int pinNum, int valueRead);
+    static void decodeDigitalReadValue(byte input[], int * pinNum, byte * valueRead);
+    
+    static void encodeAnalogReadValue(byte  output[], int pinNum, int valueRead);
+    static void decodeAnalogReadValue(byte input[], int * pinNum, int * valueRead);
+    
 protected:
 	int _i2cAdress; // I2C Address of the device
 	MsgContainer * _ptMsgContainerQueue;
@@ -84,6 +118,8 @@ protected:
 	
 	void digitalReadMsg(byte data[], int msgSize);
 	void analogReadMsg(byte data[], int msgSize);
+    
+    
 	
 	virtual void printDebug(const String &functionName, const String &strToPrint);
 };

@@ -1,13 +1,12 @@
 #include "Iris.h"
 
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__)
-#include "IrisBehaviour.h"
+#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__) || defined(__AVR_ATmega2560__)
+#include "IrisBehaviour.h" // TODO change with IrisArduinoBehaviour
 #define LOG(x) printDebug(__func__, F(x))
 #else
 #define LOG(x) this->printDebug(__func__, x)//TODO
 #endif
 
-// TODO add for other implementation
 
 // make one instance for the user to use
 MsgContainer g_MsgContainerQueue;
@@ -27,6 +26,7 @@ IrisClass::IrisClass()
 	_ptMsgContainerQueue = &g_MsgContainerQueue;
 	_irisBehaviour = &IrisBehav;
 }
+
 //******************************************************************************
 //* Public Methods
 //******************************************************************************
@@ -44,8 +44,6 @@ void IrisClass::decodeMessage()
 		case PIN_MODE_MSG_ID:
 		{
 			LOG(" => PinModeMsg");
-			// PinModeMsg pinModeMsg; // PinModeMsg herite de Msg
-			// pinModeMsg.set();
 			treatPinModeMsg(aMsg, bufferSize);
 		}
 		break;
@@ -85,6 +83,21 @@ void IrisClass::decodeMessage()
 			analogReadMsg(aMsg, bufferSize);	
 		}
 		break;
+        case DEBUG_MSG_ID:
+		{
+			if (aMsg[1] == 0) 
+            {
+                LOG("  "); LOG("  ");
+                LOG(" ===== START TEST SUITE ===== ");	
+            }
+            else
+            {
+                LOG(" ===== DEBUG ===== ");	
+            }
+            
+		}
+		break;
+            
 		default :
 		{
 			LOG(" .. UNKNOWN ID !");
@@ -104,8 +117,11 @@ void IrisClass::treatPinModeMsg(byte data[], int msgSize)
 		LOG("Bad message size");
 		return;
 	}
-	int pinNumber = data[1] >> 2; // extract pin number from data
-	byte pinModeToSet = data[1] & 0x3; // extract pin mode from data
+    
+    int pinNumber;
+    byte pinModeToSet;
+    // extract pinNumber and pinMode from data
+    this->decodePinMode(&data[1], &pinNumber, &pinModeToSet);
 	
 	// call setPinMode
 	_irisBehaviour->setPinMode(pinNumber, pinModeToSet);
@@ -113,18 +129,17 @@ void IrisClass::treatPinModeMsg(byte data[], int msgSize)
 
 void IrisClass::treatDigitalWriteMsg(byte data[], int msgSize)
 {
-	//LOG("ENTRY");
-    
     if ( msgSize != 2 ) {
 		LOG("Bad message size");
 		return;
 	}
-	int pinNumber = data[1] >> 2; // extract pin number from data
-	byte valueToSet = data[1] & 0x1; // extract value to set from data
-	
-	
+    
+    int pinNumber;
+    byte valueToSet;
+    // extract pinNumber and valueToSet from data
+    this->decodeDigitalWrite(&data[1], &pinNumber, &valueToSet);
+    	
 	_irisBehaviour->digitalWrite(pinNumber, valueToSet);
-   //LOG("EXIT");
 }
 
 // write on 2 pins
@@ -135,10 +150,11 @@ void IrisClass::treatDigitalWritesMsg(byte data[], int msgSize)
 		return;
 	}
 	
-	int pinNumber1 = data[1] >> 2;
-	int pinNumber2 = data[2] >> 2;
-	byte valueToSet1 = data[1] & 0x1;
-	byte valueToSet2 = data[2] & 0x1;
+    int pinNumber1, pinNumber2;
+    byte valueToSet1, valueToSet2;
+    // extract pinNumber and valueToSet from data
+    this->decodeDigitalWrite(&data[1], &pinNumber1, &valueToSet1);
+    this->decodeDigitalWrite(&data[2], &pinNumber2, &valueToSet2);
 	
 	_irisBehaviour->digitalWrite(pinNumber1, valueToSet1);
 	_irisBehaviour->digitalWrite(pinNumber2, valueToSet2);
@@ -146,13 +162,15 @@ void IrisClass::treatDigitalWritesMsg(byte data[], int msgSize)
 
 void IrisClass::treatAnalogWriteMsg(byte data[], int msgSize)
 {
-	if ( msgSize != 2 ) {
+	if ( msgSize != 3 ) {
 		LOG("Bad message size");
 		return;
 	}
 	
-	int pinNumber = data[1];
-	byte valueToSet = data[2];
+	int pinNumber;
+	byte valueToSet;
+    // extract pinNumber and valueToSet from data
+    decodeAnalogWrite(&data[1], &pinNumber, &valueToSet);
 
 	_irisBehaviour->analogWrite(pinNumber, valueToSet);
 }
@@ -179,41 +197,188 @@ void IrisClass::digitalReadMsg(byte data[], int msgSize) // ??? Bizarre => j'ai 
 		LOG("Bad message size");
 		return;
 	}
-	
-	int pinNumber = data[1];
+	  
+    int pinNumber;
+    // extract pinNumber from data
+    decodeDigitalRead(&data[1], &pinNumber);
+    
 	bool valueRead = _irisBehaviour->digital_Read(pinNumber);
-	Serial.println(valueRead);
-	// encode msg, write in global var
+
+	// encode msg, write in global var : it will be ready for reading
 	g_OutputMsgSize = 2;
 	g_pOutputMsgBuf[0] = DIGITAL_READ_VALUE_MSG_ID;
-	g_pOutputMsgBuf[1] = valueRead | (pinNumber << 2);
-	
+    encodeDigitalReadValue(&g_pOutputMsgBuf[1], pinNumber, valueRead);
+   // Serial.println(__func__);
+   // Serial.println(g_pOutputMsgBuf[1]);    	
 }
 
 
 void IrisClass::analogReadMsg(byte data[], int msgSize) // ??? Bizarre => j'ai changé le sens
 {
-	if ( msgSize != 1 ) {
+	if ( msgSize != 2 ) {
 		LOG("Bad message size");
 		return;
 	}
 	
-	int pinNumber = data[1];
+	int pinNumber;
+    // extract pinNumber from data
+    decodeAnalogRead(&data[1], &pinNumber);
+    
 	int valueRead = _irisBehaviour->analogRead(pinNumber);
 	
 	// encode msg, write in global var
 	g_OutputMsgSize = 3;
 	g_pOutputMsgBuf[0] = ANALOG_READ_VALUE_MSG_ID;
-	g_pOutputMsgBuf[1] = (valueRead >> 8)| (pinNumber << 2);
-	g_pOutputMsgBuf[2] = valueRead & 0xFF;
+    
+    encodeAnalogReadValue(&g_pOutputMsgBuf[1], pinNumber, valueRead);
+	//g_pOutputMsgBuf[1] = (valueRead >> 8)| (pinNumber << 2);
+	//g_pOutputMsgBuf[2] = valueRead & 0xFF;
 	
 }
 
 
-void IrisClass::decodeDigitalRead(byte aByte, int * pinNum, int * valueRead)
+//******************************************************************************
+//* request 
+//******************************************************************************
+void IrisClass::debugMsgReq(int id)
 {
-	*valueRead = aByte & 0x3;
-	*pinNum = aByte >> 2;
+    //To implement
+}
+
+
+void IrisClass::pinModeReq(int pinMode, byte mode)
+{
+    //To implement
+}
+
+void IrisClass::encodePinMode(byte output[], int * size, int pinNum, byte mode)
+{
+    output[0] = PIN_MODE_MSG_ID; 
+    output[1] = (pinNum << 2) |  mode; 
+    *size = 2;
+}
+
+
+void IrisClass::decodePinMode(byte input[], int * pinNum, byte * mode)
+{
+	*pinNum = input[0] >> 2; 
+    *mode = input[0] & 0x3;   
+}
+
+
+void IrisClass::digitalWriteReq(int pinMode, byte valueToSet)
+{
+     //To implement
+}
+
+void IrisClass::encodeDigitalWrite(byte output[], int * size,int pinNum, byte valueToSet)
+{
+    output[0] = DIGITAL_WRITE_MSG_ID;
+    output[1] = (pinNum << 2) |  valueToSet;
+    *size = 2;
+}
+
+void IrisClass::decodeDigitalWrite(byte input[], int * pinNum, byte * valueToSet)
+{
+    *pinNum = input[0] >> 2; // extract pin number from data
+	*valueToSet = input[0] & 0x1; // extract value to set from data    
+}
+
+
+void IrisClass::analogWriteReq(int pinMode, int valueToSet)
+{
+    //To implement
+}
+
+void IrisClass::encodeAnalogWrite(byte output[], int * size, int pinNum, int valueToSet)
+{
+    // valueToSet must be [0, 255]
+    output[0] = ANALOG_WRITE_MSG_ID;
+    output[1] = pinNum;
+    output[2] = valueToSet;
+    *size = 3;
+}
+
+void IrisClass::decodeAnalogWrite(byte input[],int * pinNum, byte * valueToSet)
+{
+    *pinNum = input[0]; // extract pin number from data
+	*valueToSet = input[1]; // extract value to set from data   
+}
+
+void IrisClass::digitalReadReq(int pinMode)
+{
+    //To implement
+}
+
+void IrisClass::encodeDigitalRead(byte  output[], int * size, int  pinNum)
+{
+    output[0] = DIGITAL_READ_MSG_ID;
+    output[1] = pinNum;
+    *size = 2;
+}
+
+
+void IrisClass::decodeDigitalRead(byte input[], int * pinNum)
+{
+	*pinNum =  input[0];
+}
+
+
+void IrisClass::analogReadReq(int pinMode)
+{
+    //To implement
+}
+
+void IrisClass::decodeAnalogRead(byte input[], int * pinNum)
+{
+    *pinNum =  input[0];
+}
+
+void IrisClass::encodeAnalogRead(byte  output[], int * size, int  pinNum)
+{
+    output[0] = ANALOG_READ_MSG_ID;
+    output[1] = pinNum;
+    *size = 2;
+}
+
+
+//******************************************************************************
+//* value
+//******************************************************************************
+void IrisClass::encodeDigitalReadValue(byte output[], int pinNum, int valueRead) // TODO demander à Patrice de verif
+{
+    //Serial.println(__func__);
+    //Serial.println(valueRead | (pinNum << 2));
+    output[0] = valueRead | (pinNum << 2);
+}
+
+void IrisClass::decodeDigitalReadValue(byte input[], int * pinNum, byte * valueRead)
+{
+    *pinNum = input[0] >> 2; 
+    *valueRead = input[0] & 0x3;   
+  //  Serial.print(__func__);
+  //  Serial.println(*valueRead);
+}
+
+
+void IrisClass::encodeAnalogReadValue(byte output[], int pinNum, int valueRead) // TODO demander à Patrice de verif
+{
+    //Serial.println(__func__);
+    //Serial.println(valueRead | (pinNum << 2));
+    output[0] = 0;
+    output[0] = (valueRead >> 8) | (pinNum << 2);
+    output[1] = valueRead & 0xFF;
+}
+
+void IrisClass::decodeAnalogReadValue(byte input[], int * pinNum, int * valueRead)
+{
+    *pinNum = input[0] >> 2; 
+    *valueRead = input[0] & 0x3 + input[1]*8;   
+  //  Serial.print(__func__);
+   // Serial.println(input[0]);
+  //  Serial.println(input[1]);
+    //Serial.println(*pinNum);
+    //Serial.println(*valueRead);
 }
 
 void IrisClass::printDebug(const String &functionName, const String &strToPrint)
