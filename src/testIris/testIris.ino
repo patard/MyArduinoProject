@@ -20,8 +20,8 @@ test(ok)
   assertNotEqual(x, y);
   // assertEqual(x, y);
   }*/
-  
-test(led13)
+
+/*test(led13)
 {
   byte msgId;
   byte data;
@@ -60,44 +60,99 @@ test(led13)
   Serial.print("testLed13 high ");
   Serial.println (value);
   assertEqual(value, HIGH);
-}
+}*/
 
-/*
+
 test(digitRead)
 {
-   byte msgId;
+  byte msgId;
   byte data;
-  int value;
- 
+  bool valueSet;
+
+  int pinNumberMaster = 12;
+  int pinNumberAut = 12; //Arduino under test
+
+// set pin 7 to INPUT
   Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device
-  // encode msg digitalRead on pinNumber
-  msgId = 1;
-  data = 53; // 0x35
+  msgId = PIN_MODE_MSG_ID;
+  data = (pinNumberAut << 2) |  INPUT_PIN_MODE ; // ne pas mettre en pullup
   Wire.write(msgId);
   Wire.write(data); // sends one byte
   Wire.endTransmission(); // stop transmitting
 
+  delay(100); 
+
+  // ------------- set pinNumberMaster to High on master
+  valueSet = HIGH;
+  digitalWrite(pinNumberMaster, valueSet);
+
+  // Digital_read_request
+  Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device
+  // encode msg digitalRead on pinNumber
+  msgId = DIGITAL_READ_MSG_ID;
+  data = pinNumberAut; 
+  Wire.write(msgId);
+  Wire.write(data); // sends one byte
+  Wire.endTransmission(); // stop transmitting
+  
   // step 2: wait for readings to happen
   delay(70);                   // datasheet suggests at least 65 milliseconds ....
-
+  
   // step 4: request reading from sensor
-  Wire.requestFrom(I2C_SLAVE_ADDR, 2);    // request 2 bytes from slave device 
-
-
+  Wire.requestFrom(I2C_SLAVE_ADDR, 2);    // request 2 bytes from slave device
   // step 5: receive reading from sensor
   byte reading[2];
   if (2 <= Wire.available()) { // if two bytes were received
     reading[0] = Wire.read();  // receive high byte (overwrites previous reading) it is the msgId
     //check msgId == DIGITAL_READ_VALUE_MSG_ID
     assertEqual(reading[0], DIGITAL_READ_VALUE_MSG_ID);
-    reading[1] = Wire.read(); 
+    reading[1] = Wire.read();
     // decode digitalRead
     int pinNumber = 0;
     int valueRead;
     IrisClass::decodeDigitalRead(reading[1], &pinNumber, &valueRead);
-    Serial.println(valueRead);   // print the reading
+    assertEqual(pinNumber, pinNumberAut);
+    assertEqual(valueRead, valueSet);
   }
-}*/
+
+
+// ------------- set pinNumberMaster to Low on master
+  valueSet = LOW;
+  digitalWrite(pinNumberMaster, valueSet);
+
+  // Digital_read_request
+  Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device
+  // encode msg digitalRead on pinNumber
+  msgId = DIGITAL_READ_MSG_ID;
+  data = pinNumberAut; 
+  Wire.write(msgId);
+  Wire.write(data); // sends one byte
+  Wire.endTransmission(); // stop transmitting
+  
+  // step 2: wait for readings to happen
+  delay(70);                   // datasheet suggests at least 65 milliseconds ....
+  
+  // step 4: request reading from sensor
+  Wire.requestFrom(I2C_SLAVE_ADDR, 2);    // request 2 bytes from slave device
+  // step 5: receive reading from sensor
+  //byte reading[2];
+  if (2 <= Wire.available()) { // if two bytes were received
+    reading[0] = Wire.read();  // receive high byte (overwrites previous reading) it is the msgId
+    //check msgId == DIGITAL_READ_VALUE_MSG_ID
+    assertEqual(reading[0], DIGITAL_READ_VALUE_MSG_ID);
+    reading[1] = Wire.read();
+    // decode digitalRead
+    int pinNumber = 0;
+    int valueRead;
+    IrisClass::decodeDigitalRead(reading[1], &pinNumber, &valueRead);
+    assertEqual(pinNumber, pinNumberAut);
+    Serial.println(valueSet);
+    Serial.println(valueRead);
+    assertEqual(valueRead, valueSet);
+  }
+
+  
+}
 
 
 void setup()
@@ -105,7 +160,7 @@ void setup()
   pinMode(13, INPUT_PULLUP);
   Wire.begin(); // join i2c bus (address optional for master)
   Serial.begin(9600);
-  Serial.println("testIris pret");
+  Serial.println("---------------------------");
 }
 
 void loop()
