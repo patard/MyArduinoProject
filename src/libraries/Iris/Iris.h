@@ -27,7 +27,7 @@ I2C communication in which Arduino is the slave
 * Query using the REPORT_FIRMWARE message.
 */
 #define Iris_FIRMWARE_MAJOR_VERSION 0
-#define Iris_FIRMWARE_MINOR_VERSION 2
+#define Iris_FIRMWARE_MINOR_VERSION 1
 // message command bytes
 #define PIN_MODE_MSG_ID 0x01
 #define DIGITAL_READ_MSG_ID 0x02
@@ -80,7 +80,7 @@ public:
     virtual void pinModeReq(int pinMode, byte mode);
     static void decodePinMode(byte input[], int * pinNum, byte * mode);
     static void encodePinMode(byte output[], int * size,int pinNum, byte mode);
-    
+        
     virtual void digitalWriteReq(int pinMode, byte valueToSet);
     static void decodeDigitalWrite(byte input[], int * pinNum, byte * valueToSet);
     static void encodeDigitalWrite(byte output[], int * size,int pinNum, byte valueToSet);
@@ -103,7 +103,7 @@ public:
     
     static void encodeAnalogReadValue(byte  output[], int pinNum, int valueRead);
     static void decodeAnalogReadValue(byte input[], int * pinNum, int * valueRead);
-    
+            
 protected:
 	int _i2cAdress; // I2C Address of the device
 	MsgContainer * _ptMsgContainerQueue;

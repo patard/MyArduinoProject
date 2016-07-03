@@ -1,6 +1,14 @@
 #include "IrisArduino.h"
 #define DEFAULT_SERIAL_BAUD_RATE 9600
 
+
+extern "C" {
+#include <string.h>
+#include <stdlib.h>
+}
+
+#define VERSION_BLINK_PIN 13
+
 /*
 * Receive I2C data
 */
@@ -52,6 +60,7 @@ void IrisArduinoClass::begin(void)
 	_i2cAdress = 0x05;
 	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 	Serial.println(__func__);
+    blinkVersion();
 }
 /**
 * Initialize the I2C address of the device
@@ -63,6 +72,7 @@ void IrisArduinoClass::begin(int i2cAddress)
 	_i2cAdress = i2cAddress;
 	this->initI2cAsSlave(_i2cAdress); // initialize i2c
 	Serial.println(__func__);
+    blinkVersion();
 }
 
 
@@ -180,6 +190,88 @@ void IrisArduinoClass::printDebug(const String &functionName, const String &strT
 	Serial.print(" IrisArduino | ");
 	Serial.println(strToPrint);
 	//#endif
+}
+
+
+
+/**
+ * Sets the name and version of the firmware. This is not the same version as the Firmata protocol
+ * (although at times the firmware version and protocol version may be the same number).
+ * @param name A pointer to the name char array
+ * @param major The major version number
+ * @param minor The minor version number
+ */
+/*void IrisArduinoClass::setFirmwareNameAndVersion(const char *name, byte major, byte minor)
+{
+  const char *firmwareName;
+  const char *extension;
+
+  // parse out ".cpp" and "applet/" that comes from using __FILE__
+  extension = strstr(name, ".cpp");
+  firmwareName = strrchr(name, '/');
+
+  if (!firmwareName) {
+    // windows
+    firmwareName = strrchr(name, '\\');
+  }
+  if (!firmwareName) {
+    // user passed firmware name
+    firmwareName = name;
+  } else {
+    firmwareName ++;
+  }
+
+  if (!extension) {
+    _firmwareVersionCount = strlen(firmwareName) + 2;
+  } else {
+    _firmwareVersionCount = extension - firmwareName + 2;
+  }
+
+  // in case anyone calls setFirmwareNameAndVersion more than once
+  free(_firmwareVersionVector);
+
+  _firmwareVersionVector = (byte *) malloc(_firmwareVersionCount + 1);
+  _firmwareVersionVector[_firmwareVersionCount] = 0;
+  _firmwareVersionVector[0] = major;
+  _firmwareVersionVector[1] = minor;
+  strncpy((char *)_firmwareVersionVector + 2, firmwareName, _firmwareVersionCount - 2);
+}*/
+
+void IrisArduinoClass::blinkVersion(void)
+{
+//#if defined(VERSION_BLINK_PIN)
+ // if (blinkVersionDisabled) return;
+  // flash the pin with the protocol version
+  pinMode(VERSION_BLINK_PIN, OUTPUT);
+  //digitalWrite(VERSION_BLINK_PIN, HIGH);
+  //delay(1000);
+ // digitalWrite(VERSION_BLINK_PIN, LOW);
+  strobeBlinkPin(VERSION_BLINK_PIN, Iris_FIRMWARE_MAJOR_VERSION, 250, 500);
+  delay(1000);
+  strobeBlinkPin(VERSION_BLINK_PIN, Iris_FIRMWARE_MINOR_VERSION, 250, 500);
+  delay(1000);
+//#endif
+}
+
+
+
+/**
+ * Flashing the pin for the version number
+ * @private
+ * @param pin The pin the LED is attached to.
+ * @param count The number of times to flash the LED.
+ * @param onInterval The number of milliseconds for the LED to be ON during each interval.
+ * @param offInterval The number of milliseconds for the LED to be OFF during each interval.
+ */
+void IrisArduinoClass::strobeBlinkPin(byte pin, int count, int onInterval, int offInterval)
+{
+  byte i;
+  for (i = 0; i < count; i++) {
+    delay(offInterval);
+    digitalWrite(pin, HIGH);
+    delay(onInterval);
+    digitalWrite(pin, LOW);
+  }
 }
 
 // make one instance for the user to use

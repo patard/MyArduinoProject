@@ -85,13 +85,11 @@ void IrisClass::decodeMessage()
 		break;
         case DEBUG_MSG_ID:
 		{
-			if (aMsg[1] == 0) 
-            {
+			if (aMsg[1] == 0)  {
                 LOG("  "); LOG("  ");
                 LOG(" ===== START TEST SUITE ===== ");	
             }
-            else
-            {
+            else {
                 LOG(" ===== DEBUG ===== ");	
             }
             
@@ -176,7 +174,7 @@ void IrisClass::treatAnalogWriteMsg(byte data[], int msgSize)
 }
 
 
-void IrisClass::treatIdlVersionMsg(byte data[], int msgSize)
+void IrisClass::treatIdlVersionMsg(byte data[], int msgSize) // TODO
 {
 	if ( msgSize != 1 ) {
 		LOG("Bad message size");
@@ -207,6 +205,7 @@ void IrisClass::digitalReadMsg(byte data[], int msgSize) // ??? Bizarre => j'ai 
 	// encode msg, write in global var : it will be ready for reading
 	g_OutputMsgSize = 2;
 	g_pOutputMsgBuf[0] = DIGITAL_READ_VALUE_MSG_ID;
+        
     encodeDigitalReadValue(&g_pOutputMsgBuf[1], pinNumber, valueRead);
    // Serial.println(__func__);
    // Serial.println(g_pOutputMsgBuf[1]);    	
@@ -230,10 +229,7 @@ void IrisClass::analogReadMsg(byte data[], int msgSize) // ??? Bizarre => j'ai c
 	g_OutputMsgSize = 3;
 	g_pOutputMsgBuf[0] = ANALOG_READ_VALUE_MSG_ID;
     
-    encodeAnalogReadValue(&g_pOutputMsgBuf[1], pinNumber, valueRead);
-	//g_pOutputMsgBuf[1] = (valueRead >> 8)| (pinNumber << 2);
-	//g_pOutputMsgBuf[2] = valueRead & 0xFF;
-	
+    encodeAnalogReadValue(&g_pOutputMsgBuf[1], pinNumber, valueRead);	
 }
 
 
@@ -345,7 +341,7 @@ void IrisClass::encodeAnalogRead(byte  output[], int * size, int  pinNum)
 //******************************************************************************
 //* value
 //******************************************************************************
-void IrisClass::encodeDigitalReadValue(byte output[], int pinNum, int valueRead) // TODO demander à Patrice de verif
+void IrisClass::encodeDigitalReadValue(byte  output[], int pinNum, int valueRead) // TODO demander à Patrice de verif
 {
     //Serial.println(__func__);
     //Serial.println(valueRead | (pinNum << 2));
@@ -373,13 +369,9 @@ void IrisClass::encodeAnalogReadValue(byte output[], int pinNum, int valueRead) 
 void IrisClass::decodeAnalogReadValue(byte input[], int * pinNum, int * valueRead)
 {
     *pinNum = input[0] >> 2; 
-    *valueRead = input[0] & 0x3 + input[1]*8;   
-  //  Serial.print(__func__);
-   // Serial.println(input[0]);
-  //  Serial.println(input[1]);
-    //Serial.println(*pinNum);
-    //Serial.println(*valueRead);
+    *valueRead = (input[0] & 0x3 )* 0x100 + input[1];   
 }
+
 
 void IrisClass::printDebug(const String &functionName, const String &strToPrint)
 {

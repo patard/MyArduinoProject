@@ -1,0 +1,24 @@
+#######################################
+# Syntax Coloring Map Iris
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Iris	KEYWORD1	Iris
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+decodeMessage	KEYWORD2
+debugMsgReq	KEYWORD2
+pinModeReq	KEYWORD2
+digitalWriteReq	KEYWORD2
+analogWriteReq	KEYWORD2
+digitalReadReq	KEYWORD2
+analogReadReq	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################

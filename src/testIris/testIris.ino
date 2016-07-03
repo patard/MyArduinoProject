@@ -39,17 +39,17 @@
 #include <IrisArduino.h>
 
 #define I2C_SLAVE_ADDR 0x05 // address of the AUT on the I2C
-
+#define ANALOG_MARGIN 20
 int testNumber;
 
-/*
-  test(bad)
-  {
-  int x = 3;
-  int y = 3;
-  assertNotEqual(x, y);
-  // assertEqual(x, y);
-  }*/
+
+void decode_AnalogReadValue(byte input[], int * pinNum, int * valueRead)
+{
+  *pinNum = input[0] >> 2;
+  //*valueRead = (input[0] & 0x3 )* 0x100 + input[1];
+  *valueRead =  input[1];
+}
+
 
 
 test(analRead)
@@ -57,13 +57,13 @@ test(analRead)
   Serial.println(F("ENTRY analogRead"));
 
   byte reading[ANALOG_READ_VALUE_MSG_SIZE];
- // int pinNumberMaster = A0;
+
+  // pinNumber on AUT are choosen in order to reuse the RC circuit
   int pinNumberAutWrite = 3; //Arduino under test => write PWM
   int pinNumberAutRead = 0; //Arduino under test A0
-  // to reuse the RC circuit
+
   int valueToSet = 125;
   int valueReadOnMaster;
-  int valueReadOnAut;
 
   // send DEBUG Msg
   Iris.debugMsgReq(testNumber);
@@ -77,14 +77,14 @@ test(analRead)
   // -- read on Analog input on master // TODO compare with analogReadReq
   valueReadOnMaster = analogRead(A0);
   Serial.println(valueReadOnMaster);
-  // Serial.println(map(valueRead, 0, 1023, 0, 255));
+  Serial.println(map(valueReadOnMaster, 0, 1023, 0, 255));
   Serial.println("--");
 
   delay(100);
   // -- request analog read on AUT
   Iris.analogReadReq(pinNumberAutRead);
 
-  
+
   // ---- check data returned
   Serial.println( F("Check value read on AUT"));
   if (ANALOG_READ_VALUE_MSG_SIZE <= Wire.available()) { // if two bytes were received
@@ -92,29 +92,28 @@ test(analRead)
     assertEqual(reading[0], ANALOG_READ_VALUE_MSG_ID);
     reading[1] = Wire.read();
     reading[2] = Wire.read();
- 
-    int pinNumber = 0;
-    
-    Serial.println(reading[1]);
-    Serial.println(reading[2]);
-     IrisClass::decodeAnalogReadValue(&reading[1], &pinNumber, &valueReadOnAut);
-    /*  Serial.println(pinNumber);
-      // assertEqual(pinNumber, pinNumberAutRead);
-      Serial.println(valueRead);
-      // assertEqual(valueRead, valueToSet);*/
+    int pinNumber = reading[1] >> 2;
+    int valueReadOnAut = (reading[1] & 0x3 ) * 0x100 + reading[2];
+
+    // avec la ligne suivante decommentée ca plante !! pq ?
+    //decode_AnalogReadValue(&reading[1], &pinNumber, &valueReadOnAut);
+    //IrisClass::decodeAnalogReadValue(&reading[1], &pinNumber, &valueReadOnAut);
+    Serial.println(pinNumber);
+    //assertEqual(pinNumber, pinNumberAutRead);// check read pin is the one asked
+    Serial.println(valueReadOnAut);
+    int valueMap = map(valueReadOnAut, 0, 1023, 0, 255); // check value read
+    assertMore(valueMap, valueToSet - ANALOG_MARGIN);
+    assertLess(valueMap, valueToSet + ANALOG_MARGIN);
   }
-
-
-  assertEqual(1, 1);
 
   Serial.println(F("EXIT analogRead"));
   Serial.println(F("---------------------------"));
   testNumber++;
 }
 
-/*
-  test(analWrite) // TODO assert
-  {
+
+test(analWrite) // TODO assert
+{
   Serial.println(F("ENTRY analogWrite"));
 
   int pinNumberMaster = A0;
@@ -148,11 +147,11 @@ test(analRead)
   Serial.println(F("EXIT analogWrite"));
   Serial.println("---------------------------");
   testNumber++;
-  }*/
+}
 
-/*
-  test(digitWrite)
-  {
+
+test(digitWrite)
+{
   int value;
 
   Serial.println(F("ENTRY digitalWrite"));
@@ -186,11 +185,11 @@ test(analRead)
   Serial.println(F("EXIT digitalWrite"));
   Serial.println("---------------------------");
   testNumber++;
-  }
+}
 
 
-  test(digitRead)
-  {
+test(digitRead)
+{
   byte reading[DIGITAL_READ_VALUE_MSG_SIZE];
   bool valueSet;
 
@@ -258,13 +257,12 @@ test(analRead)
   Serial.println(F("EXIT digitalRead"));
   Serial.println("---------------------------");
   testNumber++;
-  }*/
+}
 
 
 void setup()
 {
   testNumber = 0;
-  // pinMode(A0, INPUT);
   Iris.beginMaster(I2C_SLAVE_ADDR);
   Serial.println(F("---------------------------"));
 }
