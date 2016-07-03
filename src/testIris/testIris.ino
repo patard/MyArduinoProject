@@ -43,15 +43,6 @@
 int testNumber;
 
 
-void decode_AnalogReadValue(byte input[], int * pinNum, int * valueRead)
-{
-  *pinNum = input[0] >> 2;
-  //*valueRead = (input[0] & 0x3 )* 0x100 + input[1];
-  *valueRead =  input[1];
-}
-
-
-
 test(analRead)
 {
   Serial.println(F("ENTRY analogRead"));
@@ -68,6 +59,8 @@ test(analRead)
   // send DEBUG Msg
   Iris.debugMsgReq(testNumber);
 
+  Serial.print(F("Value set: "));
+  Serial.println(valueToSet);
 
   // ---- Write analog value on pin on AUT
   Serial.println( F("Write analog value on AUT"));
@@ -84,7 +77,6 @@ test(analRead)
   // -- request analog read on AUT
   Iris.analogReadReq(pinNumberAutRead);
 
-
   // ---- check data returned
   Serial.println( F("Check value read on AUT"));
   if (ANALOG_READ_VALUE_MSG_SIZE <= Wire.available()) { // if two bytes were received
@@ -92,16 +84,16 @@ test(analRead)
     assertEqual(reading[0], ANALOG_READ_VALUE_MSG_ID);
     reading[1] = Wire.read();
     reading[2] = Wire.read();
-    int pinNumber = reading[1] >> 2;
-    int valueReadOnAut = (reading[1] & 0x3 ) * 0x100 + reading[2];
 
-    // avec la ligne suivante decommentée ca plante !! pq ?
-    //decode_AnalogReadValue(&reading[1], &pinNumber, &valueReadOnAut);
-    //IrisClass::decodeAnalogReadValue(&reading[1], &pinNumber, &valueReadOnAut);
-    Serial.println(pinNumber);
+    int pinNumber;// = reading[1] >> 2;
+    int valueReadOnAut;// = (reading[1] & 0x3 ) * 0x100 + reading[2];
+    decodeAnalogReadValue(&reading[0], &pinNumber, &valueReadOnAut);
+    //Serial.println(pinNumber);
     //assertEqual(pinNumber, pinNumberAutRead);// check read pin is the one asked
     Serial.println(valueReadOnAut);
     int valueMap = map(valueReadOnAut, 0, 1023, 0, 255); // check value read
+    Serial.print(F("Value read: "));
+    Serial.println(valueMap);
     assertMore(valueMap, valueToSet - ANALOG_MARGIN);
     assertLess(valueMap, valueToSet + ANALOG_MARGIN);
   }
@@ -226,7 +218,7 @@ test(digitRead)
     // decode digitalRead
     int pinNumber = 0;
     byte valueRead;
-    IrisClass::decodeDigitalReadValue(&reading[1], &pinNumber, &valueRead);
+    decodeDigitalReadValue(&reading[0], &pinNumber, &valueRead);
     assertEqual(pinNumber, pinNumberAut);
     assertEqual(valueRead, valueSet);
   }
@@ -249,7 +241,7 @@ test(digitRead)
     // decode digitalRead
     int pinNumber = 0;
     byte valueRead;
-    IrisClass::decodeDigitalReadValue(&reading[1], &pinNumber, &valueRead);
+    decodeDigitalReadValue(&reading[0], &pinNumber, &valueRead);
     assertEqual(pinNumber, pinNumberAut);
     assertEqual(valueRead, valueSet);
   }

@@ -9,8 +9,9 @@ extern "C" {
 
 #define VERSION_BLINK_PIN 13
 
-/*
-* Receive I2C data
+/**
+* function call on interrupt genrated by I2C message reception
+* @param numBytes: number of byes receives (cf arduino Wire library for more explanation)
 */
 void receiveData(int numBytes) { // numBytes: the number of bytes read from the master
 	int bytePosition = 0;
@@ -62,6 +63,7 @@ void IrisArduinoClass::begin(void)
 	Serial.println(__func__);
     blinkVersion();
 }
+
 /**
 * Initialize the I2C address of the device
 * @param is the i2c address to set
@@ -80,9 +82,8 @@ void IrisArduinoClass::beginMaster(int i2cAddress)
 {
 	Serial.begin(DEFAULT_SERIAL_BAUD_RATE);
 	_i2cAdress = i2cAddress;
-	//this->initI2cAsSlave(_i2cAdress); // initialize i2c
     Wire.begin(); // join i2c bus (address optional for master)
-	Serial.println(__func__);
+	//Serial.println(__func__);
 }
 
 
@@ -112,7 +113,7 @@ void IrisArduinoClass::debugMsgReq(int id)
 
 void IrisArduinoClass::pinModeReq(int pinNum, byte mode)
 {
-    byte toWrite[2];
+    byte toWrite[PIN_MODE_MSG_SIZE];
     int nbByteToWrite;
     
     Wire.beginTransmission(_i2cAdress); // transmit to device
@@ -124,7 +125,7 @@ void IrisArduinoClass::pinModeReq(int pinNum, byte mode)
 
 void IrisArduinoClass::digitalWriteReq(int pinNum, byte valueToSet)
 {
-    byte toWrite[2];
+    byte toWrite[DIGITAL_WRITE_MSG_SIZE];
     int nbByteToWrite;
     
     Wire.beginTransmission(_i2cAdress); // transmit to device
@@ -136,7 +137,7 @@ void IrisArduinoClass::digitalWriteReq(int pinNum, byte valueToSet)
 
 void IrisArduinoClass::digitalReadReq(int pinNum)
 {
-    byte toWrite[2];
+    byte toWrite[DIGITAL_READ_MSG_SIZE];
     int nbByteToWrite;
     
     Wire.beginTransmission(_i2cAdress); // transmit to device
@@ -155,7 +156,7 @@ void IrisArduinoClass::digitalReadReq(int pinNum)
 
 void IrisArduinoClass::analogWriteReq(int pinNum, int valueToSet)
 {
-    byte toWrite[2];
+    byte toWrite[ANALOG_WRITE_MSG_SIZE];
     int nbByteToWrite;
     
     Wire.beginTransmission(_i2cAdress); // transmit to device
@@ -167,7 +168,7 @@ void IrisArduinoClass::analogWriteReq(int pinNum, int valueToSet)
 
 void IrisArduinoClass::analogReadReq(int pinNum)
 {
-    byte toWrite[2];
+    byte toWrite[ANALOG_READ_MSG_SIZE];
     int nbByteToWrite;
     
     Wire.beginTransmission(_i2cAdress); // transmit to device
@@ -243,12 +244,9 @@ void IrisArduinoClass::blinkVersion(void)
  // if (blinkVersionDisabled) return;
   // flash the pin with the protocol version
   pinMode(VERSION_BLINK_PIN, OUTPUT);
-  //digitalWrite(VERSION_BLINK_PIN, HIGH);
-  //delay(1000);
- // digitalWrite(VERSION_BLINK_PIN, LOW);
-  strobeBlinkPin(VERSION_BLINK_PIN, Iris_FIRMWARE_MAJOR_VERSION, 250, 500);
+  strobeBlinkPin(VERSION_BLINK_PIN, IRIS_FIRMWARE_MAJOR_VERSION, 250, 500);
   delay(1000);
-  strobeBlinkPin(VERSION_BLINK_PIN, Iris_FIRMWARE_MINOR_VERSION, 250, 500);
+  strobeBlinkPin(VERSION_BLINK_PIN, IRIS_FIRMWARE_MINOR_VERSION, 250, 500);
   delay(1000);
 //#endif
 }

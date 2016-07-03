@@ -12,15 +12,14 @@ class IrisBehaviour
 {
 public:
 	IrisBehaviour();
+    
 	void setPinMode(int pinNumber, int mode);
 	
 	void digitalWrite(int pinNumber, int value);
 	void analogWrite(int pinNumber, int value);
 	
-	bool digital_Read(int pinNumber);
+	bool digitalRead(int pinNumber);
 	int analogRead(int pinNumber);
-	
-	//void sendMsg(byte msg[]);
 };
 
 extern IrisBehaviour IrisBehav;

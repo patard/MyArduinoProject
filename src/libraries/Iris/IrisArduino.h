@@ -1,3 +1,7 @@
+/*
+* Implementation of Iris on Arduino
+*/
+
 #ifndef IrisArduino_h
 #define IrisArduino_h
 
@@ -7,7 +11,16 @@
 /* That is a class function (method) which has an implicit this pointer. You can't use it as a static ISR.
 In general, classes cannot implement ISRs for this reason. There are a few workarounds, one being to make it a static class function.
 However then it will affect the entire class, not just one instance. */
+
+/**
+* 
+*/
 void sendData(); // callback
+
+/**
+* function call on interrupt genrated by I2C message reception
+* @param numBytes: number of byes receives (cf arduino Wire library for more explanation)
+*/
 void receiveData(int numBytes);
 
 class IrisArduinoClass: public IrisClass

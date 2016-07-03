@@ -55,14 +55,14 @@ void IrisBehaviour::analogWrite(int pinNumber, int value)
 }
 
 
-bool IrisBehaviour::digital_Read(int pinNumber)
+bool IrisBehaviour::digitalRead(int pinNumber)
 {
 	// TODO check if on Arduino it is really a digital Pin
     Serial.print("DR on Pin ");
     Serial.print(pinNumber);
     Serial.print(", value ");
-    Serial.println(digitalRead(pinNumber));
-	return digitalRead(pinNumber);
+    Serial.println(::digitalRead(pinNumber));
+	return ::digitalRead(pinNumber);
 }
 
 int IrisBehaviour::analogRead(int pinNumber)
